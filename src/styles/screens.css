@@ -193,16 +193,35 @@
  */
 .screen--game::before {
   content: "";
+  /* A square large enough to cover the viewport's diagonal at any aspect
+     ratio, centred by `inset: 0` + `margin: auto` — which leaves `transform`
+     free for the rotation. A square also keeps the rays evenly spaced; a
+     viewport-shaped box would stretch them. */
   position: fixed;
-  inset: -20%;
+  inset: 0;
+  margin: auto;
+  width: 220vmax;
+  height: 220vmax;
   z-index: 0;
   background: repeating-conic-gradient(
     from 0deg,
     rgba(130, 255, 190, 0.1) 0deg 5deg,
     transparent 5deg 15deg
   );
-  mask-image: radial-gradient(circle, #000 10%, rgba(0, 0, 0, 0.5) 38%, transparent 66%);
-  -webkit-mask-image: radial-gradient(circle, #000 10%, rgba(0, 0, 0, 0.5) 38%, transparent 66%);
+  mask-image: radial-gradient(
+    circle,
+    #000 0%,
+    rgba(0, 0, 0, 0.7) 18%,
+    rgba(0, 0, 0, 0.4) 30%,
+    transparent 44%
+  );
+  -webkit-mask-image: radial-gradient(
+    circle,
+    #000 0%,
+    rgba(0, 0, 0, 0.7) 18%,
+    rgba(0, 0, 0, 0.4) 30%,
+    transparent 44%
+  );
   pointer-events: none;
   animation: rays-turn 90s linear infinite;
 }

@@ -9,7 +9,7 @@
  * budget, which each orientation overrides below.)
  */
 .wheel {
-  --wheel-chrome: 386px;
+  --wheel-chrome: 410px;
   position: relative;
   display: grid;
   place-items: center;

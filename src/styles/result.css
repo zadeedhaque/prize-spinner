@@ -20,15 +20,31 @@
 /* Rays behind everything, same fan as the wheel's. */
 .result::before {
   content: "";
+  /* Square covering the viewport diagonal, as on the wheel screen. */
   position: absolute;
-  inset: -20%;
+  inset: 0;
+  margin: auto;
+  width: 220vmax;
+  height: 220vmax;
   background: repeating-conic-gradient(
     from 0deg,
-    rgba(160, 255, 200, 0.055) 0deg 4deg,
+    rgba(160, 255, 200, 0.07) 0deg 4deg,
     transparent 4deg 13deg
   );
-  mask-image: radial-gradient(circle, #000 6%, rgba(0, 0, 0, 0.35) 34%, transparent 62%);
-  -webkit-mask-image: radial-gradient(circle, #000 6%, rgba(0, 0, 0, 0.35) 34%, transparent 62%);
+  mask-image: radial-gradient(
+    circle,
+    #000 0%,
+    rgba(0, 0, 0, 0.7) 16%,
+    rgba(0, 0, 0, 0.4) 28%,
+    transparent 44%
+  );
+  -webkit-mask-image: radial-gradient(
+    circle,
+    #000 0%,
+    rgba(0, 0, 0, 0.7) 16%,
+    rgba(0, 0, 0, 0.4) 28%,
+    transparent 44%
+  );
   animation: rays-turn 70s linear infinite;
   pointer-events: none;
 }
