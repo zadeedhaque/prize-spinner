@@ -22,8 +22,12 @@
   content: "";
   /* Square covering the viewport diagonal, as on the wheel screen. */
   position: absolute;
-  inset: 0;
-  margin: auto;
+  /* Centred with calc, not `margin: auto`: the square is larger than the
+     viewport, and auto margins collapse to zero on an oversized box, which
+     pinned the fan to the top-left corner. Offsets keep `transform` free
+     for the rotation. */
+  top: calc(50% - 110vmax);
+  left: calc(50% - 110vmax);
   width: 220vmax;
   height: 220vmax;
   background: repeating-conic-gradient(
