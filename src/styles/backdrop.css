@@ -1,0 +1,116 @@
+/* Ambient background: a fixed, pointer-transparent decorative layer. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.backdrop__blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.45;
+  will-change: transform;
+}
+
+.backdrop__blob--one {
+  top: -12%;
+  left: -8%;
+  width: 46vw;
+  height: 46vw;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.75), transparent 70%);
+  animation: blob-drift 26s ease-in-out infinite;
+}
+
+.backdrop__blob--two {
+  right: -14%;
+  bottom: -18%;
+  width: 52vw;
+  height: 52vw;
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.6), transparent 70%);
+  animation: blob-drift 34s ease-in-out infinite reverse;
+}
+
+.backdrop__blob--three {
+  top: 30%;
+  left: 55%;
+  width: 26vw;
+  height: 26vw;
+  background: radial-gradient(circle, rgba(255, 215, 107, 0.34), transparent 70%);
+  animation: blob-drift 42s ease-in-out infinite;
+}
+
+@keyframes blob-drift {
+  50% {
+    transform: translate3d(6%, -5%, 0) scale(1.12);
+  }
+}
+
+.backdrop__streak {
+  position: absolute;
+  width: 140%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(134, 239, 172, 0.5), transparent);
+  opacity: 0.35;
+}
+
+.backdrop__streak--one {
+  top: 26%;
+  left: -20%;
+  animation: streak 13s linear infinite;
+}
+
+.backdrop__streak--two {
+  top: 71%;
+  left: -20%;
+  animation: streak 19s linear infinite 4s;
+}
+
+@keyframes streak {
+  from { transform: translateX(-30%); opacity: 0; }
+  35%  { opacity: 0.4; }
+  to   { transform: translateX(30%); opacity: 0; }
+}
+
+.backdrop__particles {
+  position: absolute;
+  inset: 0;
+}
+
+.backdrop__particle {
+  position: absolute;
+  bottom: -8vh;
+  border-radius: 50%;
+  background: radial-gradient(circle, #d9ffe9, rgba(34, 197, 94, 0.2));
+  box-shadow: 0 0 10px rgba(134, 239, 172, 0.8);
+  opacity: 0;
+  animation-name: float-up;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes float-up {
+  0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+  12%  { opacity: 0.85; }
+  85%  { opacity: 0.55; }
+  100% { transform: translate3d(var(--drift, 0), -112vh, 0); opacity: 0; }
+}
+
+.backdrop__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 42%, transparent 42%, rgba(1, 8, 5, 0.82) 100%);
+}
+
+/* Jackpot: warm the whole room up. */
+.app--jackpot .backdrop__blob--three {
+  opacity: 0.85;
+  filter: blur(70px);
+}
+
+.app--jackpot .backdrop__vignette {
+  background: radial-gradient(circle at 50% 42%, rgba(255, 215, 107, 0.12) 20%, rgba(1, 8, 5, 0.86) 100%);
+}

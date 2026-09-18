@@ -1,0 +1,298 @@
+/**
+ * Never cropped: the smaller of the width available and the height left over
+ * after the header, footer, padding and gaps (--wheel-chrome), capped so it
+ * stays sane on a huge display.
+ *
+ * (Container-query units would express this without the constant, but
+ * `container-type: size` on a flex item that is sized BY the flex layout
+ * resolves cq units to zero in Chrome — the wheel vanished. Hence the
+ * budget, which each orientation overrides below.)
+ */
+.wheel {
+  --wheel-chrome: 386px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(96vw, calc(100dvh - var(--wheel-chrome)), 1150px);
+  aspect-ratio: 1;
+  transition: transform 1.4s var(--ease-out);
+}
+
+/* Vertical setups: width is the generous axis, so let the wheel use it. */
+@media (orientation: portrait) {
+  .wheel {
+    --wheel-chrome: 520px;
+    width: min(99vw, calc(100dvh - var(--wheel-chrome)), 1250px);
+  }
+}
+
+/* Short landscape screens have almost no height to give. */
+@media (max-height: 640px) {
+  .wheel {
+    --wheel-chrome: 250px;
+  }
+}
+
+/* Suspense: push in on the wheel as it spins, and hold through the result. */
+.app--spinning .wheel,
+.app--result .wheel {
+  transform: scale(1.06);
+}
+
+.wheel__glow {
+  position: absolute;
+  inset: 2%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.55), rgba(20, 184, 166, 0.25) 55%, transparent 72%);
+  filter: blur(42px);
+  opacity: 1;
+  transition: opacity 0.4s ease;
+  animation: halo-breathe 4.5s ease-in-out infinite;
+}
+
+@keyframes halo-breathe {
+  50% { filter: blur(56px); opacity: 0.82; }
+}
+
+/**
+ * A glint travelling around the face, on its own layer above the slices but
+ * below the hub. Transform-only, so it rides the compositor.
+ */
+.wheel__sheen {
+  position: absolute;
+  inset: 9%;
+  z-index: 1;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 58%,
+    rgba(255, 255, 255, 0.12) 74%,
+    rgba(255, 255, 255, 0.28) 79%,
+    rgba(255, 255, 255, 0.08) 84%,
+    transparent 92%
+  );
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: sheen-sweep 7s linear infinite;
+}
+
+@keyframes sheen-sweep {
+  to { transform: rotate(360deg); }
+}
+
+.wheel--spinning .wheel__sheen {
+  animation-duration: 1.1s;
+}
+
+.wheel--spinning .wheel__glow {
+  animation: wheel-glow 1.1s ease-in-out infinite;
+}
+
+@keyframes wheel-glow {
+  50% { filter: blur(46px); opacity: 0.75; }
+}
+
+.wheel__svg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.75))
+    drop-shadow(0 0 40px rgba(34, 197, 94, 0.28));
+}
+
+/* --------------------------------------------------------------------- ring */
+.wheel__ring-edge {
+  stroke: rgba(255, 246, 207, 0.55);
+  stroke-width: 2;
+}
+
+/* Delays are set per bulb in PrizeWheel, which turns this into a chase. */
+.wheel__bulb {
+  fill: #f2fff7;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 7px rgba(134, 239, 172, 0.95));
+  animation: bulb-twinkle 2.2s ease-in-out infinite;
+}
+
+.wheel__bulb--gold {
+  fill: var(--gold);
+  filter: drop-shadow(0 0 8px var(--glow-gold));
+}
+
+@keyframes bulb-twinkle {
+  50% { opacity: 0.12; }
+}
+
+.wheel--spinning .wheel__bulb {
+  animation-duration: 0.5s;
+}
+
+/* ------------------------------------------------------------------- slices */
+.wheel__rotor {
+  /* Promote to its own layer so the spin stays on the compositor. */
+  will-change: transform;
+}
+
+/**
+ * Idle drift while the wheel waits for a player. It starts at --idle-from —
+ * the angle the last spin ended on, set inline by PrizeWheel — so resuming
+ * never snaps the wheel back to zero, and animation-duration comes from
+ * IDLE_SPIN_SECONDS.
+ */
+.wheel__rotor--idle {
+  animation-name: idle-drift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes idle-drift {
+  from { transform: rotate(var(--idle-from, 0deg)); }
+  to   { transform: rotate(calc(var(--idle-from, 0deg) + 360deg)); }
+}
+
+.wheel__slice {
+  stroke: rgba(3, 20, 12, 0.55);
+  stroke-width: 1;
+  transition: opacity 0.45s ease, filter 0.45s ease;
+}
+
+.wheel__divider {
+  stroke: rgba(255, 246, 207, 0.4);
+  stroke-width: 1.6;
+}
+
+.wheel__face-edge {
+  stroke: rgba(255, 233, 168, 0.85);
+  stroke-width: 4;
+}
+
+.wheel__label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  paint-order: stroke fill;
+  stroke: rgba(0, 0, 0, 0.32);
+  stroke-width: 0.6;
+  user-select: none;
+}
+
+.wheel__label--primary {
+  letter-spacing: 0.01em;
+}
+
+.wheel__label--secondary {
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  opacity: 0.92;
+}
+
+/* Thin slice treatment (the jackpot at ~3 degrees) */
+.wheel__thin-marker {
+  stroke-width: 1.2;
+  opacity: 0.9;
+}
+
+.wheel__segment--jackpot .wheel__slice {
+  stroke: #fff3cf;
+  stroke-width: 1.6;
+  filter: drop-shadow(0 0 7px var(--glow-gold));
+}
+
+.wheel__plate-bg {
+  stroke: #fffaf0;
+  stroke-width: 1.6;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+}
+
+.wheel__plate--jackpot .wheel__plate-bg {
+  animation: plate-pulse 1.9s ease-in-out infinite;
+}
+
+@keyframes plate-pulse {
+  50% { filter: drop-shadow(0 0 14px var(--glow-gold)); }
+}
+
+.wheel__plate-text {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  user-select: none;
+}
+
+.wheel__plate-text--primary {
+  letter-spacing: 0.02em;
+}
+
+/* Winner highlight after the wheel stops */
+.wheel__segment--dimmed .wheel__slice {
+  opacity: 0.42;
+  filter: saturate(0.55);
+}
+
+.wheel__winner-outline {
+  stroke: #ffffff;
+  stroke-width: 3;
+  animation: winner-flash 0.9s ease-in-out infinite;
+}
+
+@keyframes winner-flash {
+  50% { stroke: var(--gold); stroke-width: 5; }
+}
+
+/* ---------------------------------------------------------------------- hub */
+.wheel__hub {
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.8));
+}
+
+.wheel__hub-inner {
+  stroke: rgba(255, 233, 168, 0.8);
+  stroke-width: 3;
+}
+
+/**
+ * The logo sits in the hub as an HTML overlay rather than an SVG <image>, so
+ * it reuses the same file-or-wordmark fallback as the rest of the app. 20% of
+ * the wheel's width keeps it comfortably inside the hub's dark inner disc at
+ * every wheel size.
+ */
+.wheel__hub-logo {
+  /* The fallback wordmark sizes itself against this box (see base.css). */
+  container-type: inline-size;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ pointer */
+.wheel__pointer {
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 16px var(--glow-gold));
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+}
+
+.wheel__pointer-shape,
+.wheel__pointer-cap {
+  stroke: #6b4a00;
+  stroke-width: 1.8;
+}
+
+.wheel__pointer-pin {
+  fill: #3a2a00;
+  opacity: 0.55;
+}
+
+.wheel--spinning .wheel__pointer {
+  animation: pointer-tick 0.14s ease-in-out infinite;
+}
+
+@keyframes pointer-tick {
+  50% { transform: rotate(-3.5deg); }
+}
+
+/* Jackpot: the whole wheel gets a gold cast on the result screen. */
+.app--jackpot .wheel__glow {
+  background: radial-gradient(circle, rgba(255, 215, 107, 0.45), transparent 68%);
+}

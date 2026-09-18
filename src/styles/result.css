@@ -1,0 +1,273 @@
+/**
+ * A win takes the whole screen: rays, gold headline, the figure at poster
+ * size, a ticket naming the prize. The panel is a layout column rather than
+ * a card — the card framing was fighting the scale of the type.
+ */
+.result {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 3vh, 44px) clamp(14px, 3vw, 40px);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(14, 92, 56, 0.95), rgba(3, 26, 15, 0.97) 62%),
+    var(--bg-deep);
+  animation: result-in 0.35s ease both;
+}
+
+/* Rays behind everything, same fan as the wheel's. */
+.result::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(160, 255, 200, 0.055) 0deg 4deg,
+    transparent 4deg 13deg
+  );
+  mask-image: radial-gradient(circle, #000 6%, rgba(0, 0, 0, 0.35) 34%, transparent 62%);
+  -webkit-mask-image: radial-gradient(circle, #000 6%, rgba(0, 0, 0, 0.35) 34%, transparent 62%);
+  animation: rays-turn 70s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes result-in {
+  from { opacity: 0; }
+}
+
+.result__panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(8px, 1.6vh, 20px);
+  width: min(96vw, 900px);
+  text-align: center;
+  animation: prize-pop 0.55s var(--ease-out) both;
+}
+
+@keyframes prize-pop {
+  from { opacity: 0; transform: translateY(26px) scale(0.94); }
+}
+
+.result__kicker {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 11vw, 7rem);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.result__kicker--jackpot {
+  font-size: clamp(3rem, 16vw, 10rem);
+}
+
+.result__lead {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.1rem, 3vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: #eafff2;
+}
+
+/* The number itself — the biggest thing on the screen. */
+.result__figure {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(5rem, 56vw, 30rem);
+  font-weight: 700;
+  line-height: 0.86;
+  letter-spacing: -0.01em;
+}
+
+.result__figure--retry {
+  font-size: clamp(2.6rem, 11vw, 6rem);
+  letter-spacing: 0.06em;
+  background: linear-gradient(180deg, #ffffff 20%, rgba(226, 255, 238, 0.55) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Cream ticket stub, notched at both ends. */
+.ticket {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: clamp(14px, 2vh, 26px) clamp(44px, 9vw, 110px);
+  background: linear-gradient(180deg, #fffdf4, #f2e6c8);
+  border: 2px solid #fff8dd;
+  border-radius: 10px;
+  box-shadow: 0 20px 40px -22px #000, 0 0 50px -14px var(--glow-gold);
+}
+
+/* The notches. */
+.ticket::before,
+.ticket::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: clamp(16px, 2.4vw, 26px);
+  aspect-ratio: 1;
+  background: #0a2e1b;
+  border-radius: 50%;
+  transform: translateY(-50%);
+}
+
+.ticket::before { left: calc(clamp(16px, 2.4vw, 26px) / -2); }
+.ticket::after { right: calc(clamp(16px, 2.4vw, 26px) / -2); }
+
+.ticket__brand {
+  font-family: "Poppins", var(--font-body), sans-serif;
+  font-size: clamp(1.4rem, 4.4vw, 2.8rem);
+  font-weight: 600;
+  line-height: 1;
+  color: #0f6b3a;
+}
+
+.ticket__label {
+  font-family: var(--font-display);
+  font-size: clamp(0.78rem, 2.2vw, 1.3rem);
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  color: #17452c;
+}
+
+.result__note {
+  margin: 0;
+  font-size: clamp(0.9rem, 2.4vw, 1.4rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #dff7e7;
+}
+
+/* Claim button: deep green face, gold rim, like the reference. */
+.btn--claim {
+  width: min(86vw, 780px);
+  margin-top: clamp(4px, 1vh, 14px);
+  padding: clamp(16px, 2.2vh, 26px) clamp(30px, 5vw, 64px);
+  background: linear-gradient(180deg, #1a8b4e, #0b5c31);
+  border: 3px solid var(--gold-mid);
+  border-radius: 999px;
+  box-shadow:
+    0 20px 44px -20px #000,
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+    0 0 54px -14px var(--glow-gold);
+  transition: transform 0.18s var(--ease-out), box-shadow 0.18s var(--ease-out);
+}
+
+.btn--claim .instructions__action {
+  font-size: clamp(1.1rem, 3vw, 2rem);
+  color: #fff8dd;
+}
+
+.btn--claim .keycap {
+  font-size: clamp(0.9rem, 2.2vw, 1.4rem);
+}
+
+.btn--claim:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 50px -20px #000, 0 0 70px -12px var(--glow-gold);
+}
+
+/* ------------------------------------------------------------------ jackpot */
+.result--jackpot {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 206, 92, 0.55), rgba(255, 186, 46, 0.22) 30%, transparent 56%),
+    radial-gradient(circle at 50% 44%, rgba(30, 124, 71, 0.95), rgba(9, 42, 22, 0.97) 66%),
+    var(--bg-deep);
+}
+
+/* Cream logo, as on the reference's gold screen. */
+.result--jackpot .logo img {
+  filter: brightness(0) invert(1) drop-shadow(0 0 26px rgba(255, 216, 130, 0.65));
+}
+
+.result--jackpot .result__kicker {
+  font-size: clamp(3rem, 21vw, 13rem);
+}
+
+.result--jackpot .result__lead {
+  font-size: clamp(1.3rem, 4.4vw, 3rem);
+}
+
+/* Gold rays, not green ones. */
+.result--jackpot::before {
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 216, 128, 0.22) 0deg 4deg,
+    transparent 4deg 12deg
+  );
+}
+
+.result--jackpot .result__lead,
+.result--jackpot .result__note {
+  color: #ffeec2;
+  text-shadow: 0 0 26px rgba(255, 200, 80, 0.45);
+}
+
+.result--jackpot .ticket {
+  box-shadow: 0 22px 44px -20px #000, 0 0 90px -10px rgba(255, 205, 80, 0.85);
+}
+
+.result--jackpot .btn--claim {
+  border-color: var(--gold-light);
+  box-shadow:
+    0 20px 44px -20px #000,
+    0 0 0 1px rgba(255, 255, 255, 0.14) inset,
+    0 0 90px -10px rgba(255, 205, 80, 0.9);
+}
+
+.result--jackpot .result__kicker {
+  animation: jackpot-text 1.6s ease-in-out infinite;
+}
+
+@keyframes jackpot-text {
+  50% { filter: drop-shadow(0 0 44px rgba(255, 205, 80, 0.8)); }
+}
+
+/* ----------------------------------------------------------------- try again */
+.result--retry {
+  background: radial-gradient(circle at 50% 45%, rgba(2, 24, 14, 0.9), rgba(1, 8, 5, 0.96));
+}
+
+.result--retry::before {
+  opacity: 0.25;
+}
+
+.result__kicker--retry {
+  font-size: clamp(1.5rem, 5vw, 3rem);
+  color: var(--text-dim);
+}
+
+/* ----------------------------------------------------------------- confetti */
+.confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confetti__piece {
+  position: absolute;
+  top: -6vh;
+  opacity: 0;
+  animation-name: confetti-fall;
+  animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1);
+  animation-fill-mode: forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes confetti-fall {
+  0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translate3d(var(--drift, 0), 108vh, 0) rotate(var(--spin, 540deg)); opacity: 0; }
+}
