@@ -598,3 +598,39 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Armed-trigger indicator
+   Confirms a forced-result trigger registered, and stays until that spin
+   starts. Deliberately tiny and dim: readable by whoever is at the keyboard,
+   unremarkable from a few feet away.
+   --------------------------------------------------------------------------- */
+.arm-dot {
+  position: fixed;
+  right: 10px;
+  bottom: 10px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 6px var(--glow-gold);
+  opacity: 0.45;
+  pointer-events: none;
+  z-index: 40;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .arm-dot {
+    animation: arm-dot-pulse 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes arm-dot-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}

@@ -13,6 +13,7 @@
  */
 import { prizes } from "../src/config/prizes";
 import {
+  FORCED_SPIN_SEQUENCES,
   FORCED_SPIN_TRIGGERS,
   GUARANTEED_PRIZE_ID,
   LANDING_MARGIN_DEGREES,
@@ -64,6 +65,46 @@ check(
   FORCED_SPIN_TRIGGERS.map(
     (entry) => `${describeShortcut(entry.shortcut)} -> ${entry.prizeId}`
   ).join(", ")
+);
+
+// The typed codes are the fallback for machines that never deliver the
+// Ctrl+Alt chords to the page, so they get the same scrutiny.
+const unknownSequences = FORCED_SPIN_SEQUENCES.filter(
+  (entry) => !findSegmentByPrizeId(segments, entry.prizeId)
+);
+check(
+  "every typed code points at a real prize",
+  unknownSequences.length === 0,
+  FORCED_SPIN_SEQUENCES.map((entry) => `${entry.sequence} -> ${entry.prizeId}`).join(", ")
+);
+
+// Codes are matched against the tail of recently typed keys, so a code that
+// ends another one would shadow it and never fire on its own.
+const shadowed = FORCED_SPIN_SEQUENCES.filter((entry) =>
+  FORCED_SPIN_SEQUENCES.some(
+    (other) => other !== entry && other.sequence.endsWith(entry.sequence)
+  )
+);
+check(
+  "no typed code is the tail of another",
+  shadowed.length === 0,
+  shadowed.map((entry) => entry.sequence).join(", ") || "all distinct"
+);
+
+// Digits only: letters would collide with the R (records) and space bindings.
+check(
+  "typed codes are digits only",
+  FORCED_SPIN_SEQUENCES.every((entry) => /^[0-9]+$/.test(entry.sequence))
+);
+
+// A chord with no typed code is unusable on a machine that swallows it.
+const withoutFallback = FORCED_SPIN_TRIGGERS.filter(
+  (entry) => !FORCED_SPIN_SEQUENCES.some((code) => code.prizeId === entry.prizeId)
+);
+check(
+  "every chord also has a typed fallback code",
+  withoutFallback.length === 0,
+  withoutFallback.map((entry) => describeShortcut(entry.shortcut)).join(", ") || "all covered"
 );
 
 if (jackpot) {

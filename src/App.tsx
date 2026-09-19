@@ -9,9 +9,22 @@ import { Records } from "./components/Records";
 import { ResultScreen } from "./components/ResultScreen";
 import { SpinControls } from "./components/SpinControls";
 import { prizes, type Prize } from "./config/prizes";
-import { FORCED_SPIN_TRIGGERS, SPIN_DURATION, STORAGE_KEYS } from "./config/settings";
+import {
+  FORCED_SPIN_SEQUENCES,
+  FORCED_SPIN_TRIGGERS,
+  SEQUENCE_RESET_MS,
+  SHOW_ARMED_INDICATOR,
+  SPIN_DURATION,
+  STORAGE_KEYS,
+} from "./config/settings";
 import { scheduleSpinTicks, soundManager } from "./utils/audio";
-import { describeShortcut, isSpaceKey, isTypingTarget, matchesShortcut } from "./utils/keyboard";
+import {
+  createSequenceTracker,
+  describeShortcut,
+  isSpaceKey,
+  isTypingTarget,
+  matchesShortcut,
+} from "./utils/keyboard";
 import { findSegmentByPrizeId, pickWeightedSegment } from "./utils/random";
 import { appendRecord, clearRecords, loadRecords, type SpinRecord } from "./utils/records";
 import { loadValue, saveValue } from "./utils/storage";
@@ -34,6 +47,11 @@ type Phase = "READY" | "SPINNING" | "RESULT" | "NAME_ENTRY" | "RECORDS";
 /** Reduced spin time for visitors who ask for less motion. */
 const REDUCED_MOTION_DURATION = 1200;
 
+/** Only as many recent keystrokes as the longest typed code need remembering. */
+const SEQUENCE_BUFFER_LENGTH = Math.max(
+  ...FORCED_SPIN_SEQUENCES.map((entry) => entry.sequence.length)
+);
+
 export default function App() {
   // Geometry is derived from the prize list's weights exactly once.
   const segments = useMemo(() => computeSegments(prizes), []);
@@ -44,6 +62,8 @@ export default function App() {
   const [attempt, setAttempt] = useState(1);
   const [totalSpins, setTotalSpins] = useState(0);
   const [records, setRecords] = useState<SpinRecord[]>([]);
+  /** Drives the small corner dot that confirms a trigger armed the next spin. */
+  const [armed, setArmed] = useState(false);
 
   /**
    * Mirrors `phase` synchronously. React state updates are async, so two
@@ -58,6 +78,10 @@ export default function App() {
    * spin. Null means the next spin is a normal weighted random one.
    */
   const forcedPrizeId = useRef<string | null>(null);
+  /** Recent plain keystrokes, for the typed codes that back up the chords. */
+  const sequence = useRef(
+    createSequenceTracker({ resetMs: SEQUENCE_RESET_MS, maxLength: SEQUENCE_BUFFER_LENGTH })
+  );
   /** The rotating <g>, so a spin can start from the live idle angle. */
   const rotorRef = useRef<SVGGElement>(null);
   const spinTimer = useRef<number | undefined>(undefined);
@@ -108,6 +132,30 @@ export default function App() {
     );
   }, []);
 
+  /**
+   * Arms `prizeId` for the next spin, whichever trigger asked for it.
+   *
+   * The body attribute is set in every build, not only in dev: on a machine
+   * where a chord is being swallowed before the page sees it, this is how
+   * you tell from devtools whether the keypress arrived at all.
+   */
+  const arm = useCallback((prizeId: string, via: string) => {
+    forcedPrizeId.current = prizeId;
+    document.body.dataset.spinnerArmed = prizeId;
+    if (SHOW_ARMED_INDICATOR) setArmed(true);
+    if (import.meta.env.DEV) {
+      console.debug(`[prize-spinner] ${via} — "${prizeId}" armed for the next spin`);
+    }
+  }, []);
+
+  /** Clears any armed prize, so a trigger only ever affects one spin. */
+  const disarm = useCallback(() => {
+    forcedPrizeId.current = null;
+    sequence.current.clear();
+    delete document.body.dataset.spinnerArmed;
+    setArmed(false);
+  }, []);
+
   const spin = useCallback(() => {
     if (phaseRef.current !== "READY") return;
 
@@ -121,8 +169,7 @@ export default function App() {
     const target = forced ?? pickWeightedSegment(segments);
 
     // Consume the trigger so it only ever affects this one spin.
-    forcedPrizeId.current = null;
-    if (import.meta.env.DEV) delete document.body.dataset.spinnerArmed;
+    disarm();
 
     // Start from where the idle rotation has actually drifted to, then solve
     // for the rotation that parks this segment under the pointer.
@@ -177,7 +224,7 @@ export default function App() {
 
       goTo("RESULT");
     }, spinDuration);
-  }, [goTo, logSpin, segments, spinDuration]);
+  }, [disarm, goTo, logSpin, segments, spinDuration]);
 
   /**
    * Leaving the result screen. Try Again hands the wheel straight back for
@@ -231,13 +278,7 @@ export default function App() {
       if (trigger) {
         // Claim the combo so the browser doesn't also act on it.
         event.preventDefault();
-        forcedPrizeId.current = trigger.prizeId;
-        if (import.meta.env.DEV) {
-          document.body.dataset.spinnerArmed = trigger.prizeId;
-          console.debug(
-            `[prize-spinner] ${describeShortcut(trigger.shortcut)} — "${trigger.prizeId}" armed for the next spin`
-          );
-        }
+        arm(trigger.prizeId, describeShortcut(trigger.shortcut));
         return;
       }
 
@@ -251,6 +292,18 @@ export default function App() {
       }
 
       if (isTypingTarget(event.target)) return;
+
+      // Typed fallback codes ("100" for the jackpot, and so on). These exist
+      // for machines that never deliver the Ctrl+Alt chords to the page —
+      // see FORCED_SPIN_SEQUENCES in src/config/settings.ts.
+      const typed = sequence.current.push(event);
+      if (typed) {
+        const code = FORCED_SPIN_SEQUENCES.find((entry) => typed.endsWith(entry.sequence));
+        if (code) {
+          arm(code.prizeId, `typed ${code.sequence}`);
+          return;
+        }
+      }
 
       if (isSpaceKey(event)) {
         // Always swallow space so the page never scrolls behind the game.
@@ -276,13 +329,15 @@ export default function App() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [claimPrize, hideRecords, leaveResult, showRecords, spin]);
+  }, [arm, claimPrize, hideRecords, leaveResult, showRecords, spin]);
 
   const showWheel = phase === "READY" || phase === "SPINNING" || phase === "RESULT";
 
   return (
     <div className={`app app--${phase.toLowerCase()}${winner?.isJackpot ? " app--jackpot" : ""}`}>
       <Background />
+
+      {armed && SHOW_ARMED_INDICATOR ? <span className="arm-dot" aria-hidden="true" /> : null}
 
       {phase === "RECORDS" ? (
         <Records records={records} onBack={hideRecords} onClear={() => setRecords(clearRecords())} />

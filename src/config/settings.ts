@@ -84,6 +84,47 @@ export const FORCED_SPIN_TRIGGERS = [
 ] as const;
 
 /**
+ * ----------------------------------------------------------------------------
+ * TYPED FALLBACK CODES (for machines where the chords don't arrive)
+ * ----------------------------------------------------------------------------
+ * A Ctrl+Alt chord is not reliably deliverable to a web page on Windows.
+ * Windows desktop shortcuts use Ctrl+Alt+<letter> for their global hotkey
+ * field, and vendor utilities (graphics, mouse/keyboard drivers, screen
+ * capture, meeting apps) and browser extensions register the same
+ * combinations system-wide. Whoever claims one first swallows it, and the
+ * browser never sees a keydown at all — no amount of application code can
+ * recover a key that never arrives.
+ *
+ * So every trigger also has a typed code: press the digits in order, with no
+ * modifiers, while the wheel is waiting. Digits are bound to nothing else,
+ * can't be captured as a global hotkey, and are layout-independent. The
+ * buffer clears after SEQUENCE_RESET_MS of not typing, so a code has to be
+ * entered deliberately.
+ *
+ * Same warning as the chords above: this ships in plain text inside the
+ * JavaScript bundle and is a staff convenience, not a security control.
+ */
+export const FORCED_SPIN_SEQUENCES = [
+  { sequence: "100", prizeId: "voucher-100-ultimate" },
+  { sequence: "050", prizeId: "voucher-50" },
+  { sequence: "015", prizeId: "voucher-15" },
+  { sequence: "010", prizeId: "voucher-10" },
+  { sequence: "005", prizeId: "voucher-5" },
+  { sequence: "000", prizeId: "try-again" },
+] as const;
+
+/** A typed code has to be finished within this long of a gap between keys. */
+export const SEQUENCE_RESET_MS = 2000;
+
+/**
+ * When a trigger arms the next spin, show a small dot in the bottom-right
+ * corner until that spin starts. Without it there is no way to tell an armed
+ * spin from a shortcut the machine swallowed — which is exactly the failure
+ * this was added to diagnose. Set to false for a completely invisible arm.
+ */
+export const SHOW_ARMED_INDICATOR = true;
+
+/**
  * The prize the wheel can't award on its own. Kept as a named export because
  * prizes.ts, the jackpot celebration and scripts/verify-wheel.ts all refer to
  * it; it must stay in FORCED_SPIN_TRIGGERS above to remain winnable at all.

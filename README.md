@@ -139,6 +139,7 @@ a 5% discount, 25% a 10% discount, 12.5% each 15%/20%, and 12.5% a voucher
 | `BADGE_MAX_ANGLE_DEG`       | `5`                     | Below this a slice is a sliver + a badge near the hub|
 | `IDLE_SPIN_SECONDS`         | `45`                    | Seconds per revolution while the wheel idles         |
 | `FORCED_SPIN_TRIGGERS`      | Ctrl+Alt+P, Ctrl+Alt+L  | Shortcut → prize pairs for forced results (see below)|
+| `FORCED_SPIN_SEQUENCES`     | `100`, `000`            | Typed codes doing the same, for machines that swallow the chords |
 | `GUARANTEED_PRIZE_ID`       | `"voucher-100-ultimate"`| The prize that can *only* be won by trigger          |
 | `MAX_RECORDS`               | `100`                   | How many past spins the records table keeps          |
 | `LOGO_PATH`                 | `public/logo.png`       | Logo file, with automatic fallback                   |
@@ -187,32 +188,76 @@ unlocked on the player's first keypress.
 matter how long the wheel runs — they stay on the wheel purely so players can
 see what is at stake, and the other prizes share out 100% of the real odds.
 
-Two shortcuts force the next spin's result:
+Each trigger below forces the next spin's result. Every one has two
+spellings: a keyboard chord, and a code typed on the number keys.
 
-| Shortcut | Next spin lands on |
-| -------- | ------------------ |
-| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>P</kbd> | `$100 Ultimate Voucher` — trigger only |
-| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>O</kbd> | `$50 Voucher` — trigger only |
-| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>I</kbd> | `$15 Voucher` |
-| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd> | `$10 Voucher` |
-| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Y</kbd> | `$5 Voucher` |
-| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>L</kbd> | `Try Again` (gives the player another spin) |
+| Shortcut | Or type | Next spin lands on |
+| -------- | ------- | ------------------ |
+| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>P</kbd> | type `100` | `$100 Ultimate Voucher` — trigger only |
+| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>O</kbd> | type `050` | `$50 Voucher` — trigger only |
+| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>I</kbd> | type `015` | `$15 Voucher` |
+| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd> | type `010` | `$10 Voucher` |
+| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Y</kbd> | type `005` | `$5 Voucher` |
+| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>L</kbd> | type `000` | `Try Again` (gives the player another spin) |
 
-Press either one before the player hits Space. Every spin that isn't armed is
-a normal weighted random spin.
+Use either spelling before the player hits Space. Every spin that isn't armed
+is a normal weighted random spin.
 
 - The spin looks completely normal: same animation, same duration, same
   sounds, and the wheel physically comes to rest aligned with the $100 slice.
-- Nothing in the UI reveals that the result was forced.
-- It applies to **one** spin only, then clears itself. Modifiers are matched
-  exactly, so plain <kbd>P</kbd> or <kbd>Ctrl</kbd> + <kbd>P</kbd> do nothing.
-- Matched on the physical key (`event.code`), because Alt rewrites
-  `event.key` on some keyboard layouts.
+- Nothing in the UI reveals that the result was forced, beyond a small dim
+  dot in the bottom-right corner while a spin is armed (see below).
+- It applies to **one** spin only, then clears itself.
+- The typed codes need no modifiers. Press the digits in order, within two
+  seconds of each other, while the wheel is waiting; anything else you press
+  clears the buffer.
 
-To change them, edit `FORCED_SPIN_TRIGGERS` in `src/config/settings.ts` —
-each entry is a `{ shortcut: { key, ctrl, alt, shift, meta }, prizeId }` pair,
-and you can add or remove entries freely. `npm run verify` fails if a trigger
-points at a prize id that doesn't exist.
+### If the chords don't work (typically Windows)
+
+A Ctrl+Alt chord is not reliably deliverable to a web page on Windows. The
+Windows shortcut-key field on desktop shortcuts produces exactly
+Ctrl+Alt+<kbd>letter</kbd> combinations, and graphics/mouse/keyboard vendor
+utilities, screen-capture tools, meeting apps and browser extensions register
+the same combinations system-wide. Whoever claims one first swallows it, and
+the browser never receives a keydown — no application code can recover a key
+that never arrives.
+
+That is what the typed codes are for: digits can't be taken as a global
+hotkey, so `100` works where <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>P</kbd>
+is intercepted.
+
+**If the chord types a character** (Ctrl+Alt+P gives `ö`, Ctrl+Alt+O gives
+`Ó`, Ctrl+Alt+I gives `í`), the machine is on a US-International-style
+layout, where Ctrl+Alt *is* AltGr and every one of these combinations is a
+real character. The keypress does reach the page, just describing itself as
+a letter nobody asked for. Those characters are now mapped back to their
+shortcuts explicitly, in `ALT_GRAPH_CHARS` in `src/utils/keyboard.ts` — add
+to that map if a layout produces something not listed there.
+
+To tell the two failure modes apart, open devtools on the machine in question
+and run:
+
+```js
+addEventListener('keydown', e => console.log(e.key, e.code, e.ctrlKey, e.altKey));
+```
+
+Press the chord. Nothing logged means something outside the browser is eating
+it — use the typed code (or re-key the chord in `settings.ts` to a
+combination nothing else claims). A line that logs with an empty `code` comes
+from an IME, an on-screen keyboard or a remote-desktop session; those are now
+matched on `event.key` as well, so they work.
+
+**Confirming an arm.** While a spin is armed, a small dim gold dot sits in the
+bottom-right corner and `document.body.dataset.spinnerArmed` holds the prize
+id, in production as well as dev. Both clear the moment the spin starts. Set
+`SHOW_ARMED_INDICATOR` to `false` in `settings.ts` for no dot at all.
+
+To change any of this, edit `FORCED_SPIN_TRIGGERS` and `FORCED_SPIN_SEQUENCES`
+in `src/config/settings.ts` — a `{ shortcut: { key, ctrl, alt, shift, meta },
+prizeId }` pair and a `{ sequence, prizeId }` pair respectively, both free to
+add to or remove from. `npm run verify` fails if either points at a prize id
+that doesn't exist, if a chord has no typed fallback, or if one code is the
+tail of another (which would shadow it).
 
 Note the difference between the two kinds: `Try Again` and the $5/$10/$15
 vouchers are ordinary prizes that also come up by chance, so their shortcuts
